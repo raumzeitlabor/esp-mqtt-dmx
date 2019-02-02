@@ -114,7 +114,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
     dmxStateTarget[12] = 255; // blue
   }
   if (strncmp("cyclerandom",(char*)payload, 11) == 0) {
-    dmxStateTarget[9] = 255;  //luminane
+    dmxStateTarget[9] = 255;  //luminance
     dmxStateTarget[10] = rand() % 255; // red
     dmxStateTarget[11] = rand() % 255; // green
     dmxStateTarget[12] = rand() % 255; // blue
@@ -133,7 +133,7 @@ void loop() {
 
 
   now = millis();
-  if (now - last >= 200) {
+  if (now - last >= 50) {
     for (int i=0; i < 255; i++){
       if (dmxState[i] > dmxStateTarget[i]){
         dmxState[i]--;
