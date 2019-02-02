@@ -6,6 +6,7 @@
 #include <PubSubClient.h>
 #include <espDMX.h>
 #include <WebSocketsServer.h>
+#include <stdlib.h>
 
 // WIFI Config Variables
 const char* host = "esp-mqtt-dmx";
@@ -52,6 +53,7 @@ void setup() {
 
   dmxB.begin(4);
   dmxB.setChans(dmxState, 512);
+  srand(time(NULL));
 }
 
 void setup_wifi() {
@@ -106,8 +108,16 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
     memset(dmxStateTarget, 0x00, sizeof(dmxStateTarget));
   }
   if (strncmp("fadetowhite",(char*)payload, 11) == 0) {
-    dmxStateTarget[10] = 255;
-    dmxStateTarget[11] = 255;
+    dmxStateTarget[9] = 255;  //luminance
+    dmxStateTarget[10] = 255; // red
+    dmxStateTarget[11] = 255; // green
+    dmxStateTarget[12] = 255; // blue
+  }
+  if (strncmp("cyclerandom",(char*)payload, 11) == 0) {
+    dmxStateTarget[9] = 255;  //luminane
+    dmxStateTarget[10] = rand() % 255; // red
+    dmxStateTarget[11] = rand() % 255; // green
+    dmxStateTarget[12] = rand() % 255; // blue
   }
 }
 
