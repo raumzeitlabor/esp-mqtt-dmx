@@ -6,7 +6,6 @@
 #include <PubSubClient.h>
 #include <espDMX.h>
 #include <WebSocketsServer.h>
-#include <stdlib.h>
 
 // WIFI Config Variables
 const char* host = "esp-mqtt-dmx";
@@ -53,7 +52,7 @@ void setup() {
 
   dmxB.begin(4);
   dmxB.setChans(dmxState, 512);
-  srand(time(NULL));
+  randomSeed(analogRead(0));
 }
 
 void setup_wifi() {
@@ -115,9 +114,30 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   }
   if (strncmp("cyclerandom",(char*)payload, 11) == 0) {
     dmxStateTarget[9] = 255;  //luminance
-    dmxStateTarget[10] = rand() % 255; // red
-    dmxStateTarget[11] = rand() % 255; // green
-    dmxStateTarget[12] = rand() % 255; // blue
+    dmxStateTarget[10] = random(256); // red
+    dmxStateTarget[11] = random(256); // green
+    dmxStateTarget[12] = random(256); // blue
+  }
+  if (strncmp("rgbl",(char*)payload, 4) == 0) {
+    //message format: "rgbl 255 255 255 255"
+    char *token;
+    token = strtok((char*)payload, " ");  //first token is now "rgbl"
+    token = strtok(NULL, " ");            //token is now the first value (red)
+    if (token != NULL) {
+      dmxStateTarget[10] = (byte)atoi(token);
+    }
+    token = strtok(NULL, " ");            //token is now the second value (green)
+    if (token != NULL) {
+      dmxStateTarget[11] = (byte)atoi(token);
+    }
+    token = strtok(NULL, " ");            //token is now the third value (blue)
+    if (token != NULL) {
+      dmxStateTarget[12] = (byte)atoi(token);
+    }
+    token = strtok(NULL, " ");            //token is now the fourth value (luminance)
+    if (token != NULL) {
+      dmxStateTarget[9] = (byte)atoi(token);
+    }
   }
 }
 
