@@ -76,7 +76,7 @@ void mqtt_reconnect() {
     Serial.print("Attempting MQTT connection...");
     if (mqttClient.connect(WiFi.macAddress().c_str())) {
       Serial.println("connected");
-      mqttClient.subscribe("/artnet/push");
+      mqttClient.subscribe("/dmx/push");
     } else {
       Serial.print("failed, rc=");
       Serial.print(mqttClient.state());
@@ -138,6 +138,23 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
     if (token != NULL) {
       dmxStateTarget[9] = (byte)atoi(token);
     }
+  }
+  if (strncmp("setchannel",(char*)payload, 4) == 0) {
+    //message format: "setchannel <chan> <value>"
+    char *token;
+    byte channel=0;
+    byte value=0;
+    token = strtok((char*)payload, " ");  //first token is now "setchannel"
+    token = strtok(NULL, " ");            //token is now the first value (channel)
+    if (token != NULL) {
+      channel = (byte)atoi(token);
+    }
+    token = strtok(NULL, " ");            //token is now the second value (value)
+    if (token != NULL) {
+      value = (byte)atoi(token);
+    }
+    dmxState[channel] = value;
+    dmxStateTarget[channel] = value;
   }
 }
 
