@@ -35,7 +35,8 @@ WebSocketsServer webSocketServer = WebSocketsServer(81);
 ESP8266HTTPUpdateServer httpUpdater;
 
 byte dmxState[255] = {0};
-long now = 0;
+byte dmxStateTarget[255] = {0};
+long now, last = 0;
 
 
 void setup() {
@@ -100,13 +101,21 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   }
   webSocketServer.broadcastTXT(payload, length);
   Serial.println();
+
+  if (strncmp("fadetoblack",(char*)payload, 11) == 0) {
+    memset(dmxStateTarget, 0x00, sizeof(dmxStateTarget));
+  }
+  if (strncmp("fadetowhite",(char*)payload, 11) == 0) {
+    dmxStateTarget[10] = 255;
+    dmxStateTarget[11] = 255;
+  }
 }
 
 
 void loop() {
   httpServer.handleClient();
   webSocketServer.loop();
-  
+
   if (!mqttClient.connected()) {
     mqtt_reconnect();
   }
@@ -114,4 +123,15 @@ void loop() {
 
 
   now = millis();
+  if (now - last >= 200) {
+    for (int i=0; i < 255; i++){
+      if (dmxState[i] > dmxStateTarget[i]){
+        dmxState[i]--;
+      } else if (dmxState[i] < dmxStateTarget[i]){
+        dmxState[i]++;
+      }
+    }
+    dmxB.setChans(dmxState, 512);
+    last = millis();
+  }
 }
