@@ -88,10 +88,13 @@ void mqtt_reconnect() {
     if (mqttClient.connect(WiFi.macAddress().c_str())) {
       Serial.println("connected");
       mqttClient.subscribe("/dmx/push");
+      webSocketServer.broadcastTXT("MQTT-Connection up.");
+
     } else {
       Serial.print("failed, rc=");
       Serial.print(mqttClient.state());
       Serial.println(" try again in 5 seconds");
+      webSocketServer.broadcastTXT("MQTT-Connection failed.");
       delay(5000);
     }
   }
