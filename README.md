@@ -38,3 +38,6 @@ compile with Arduino ide and upload via curl because we don't use mdns announce:
 
     curl -F "image=@esp-mqtt-dmx.ino.nodemcu.bin" http://172.22.37.112/update
 
+## Websocket-Server
+
+we run a websocket server on port 81 which prints some messages for debugging (because we're lazy and don't want to use the UART all the time).
