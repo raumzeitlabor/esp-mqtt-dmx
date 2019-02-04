@@ -14,6 +14,7 @@ const char* password = "affeaffeaffeaffeaffeaffe00";
 const char* mqtt_server = "infra.rzl.so";
 
 //DMX Config
+#define STATUS_LED_PIN 4
 #define NUM_LIGHTS  2
 unsigned int fadespeed = 20;
 
@@ -60,7 +61,7 @@ void setup() {
   mqttClient.setServer(mqtt_server, 1883);
   mqttClient.setCallback(mqtt_callback);
 
-  dmxB.begin(4);
+  dmxB.begin(STATUS_LED_PIN);
   dmxB.setChans(dmxState, 512);
   randomSeed(analogRead(0));
 }
