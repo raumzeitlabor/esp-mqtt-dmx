@@ -11,7 +11,7 @@ supported format of commands to be published to the "/dmx/push" topic:
 
 |command|parameters|description|
 |-------|----------|-----------|
-|fadespeed|<speed in miliseconds>|this value is used as a "step width" to move from current DMX state to desired DMX state. Default value = 20, values below 20 seem to produce weird effects!|
+|fadespeed|speed in miliseconds|this value is used as a "step width" to move from current DMX state to desired DMX state. Default value = 20, values below 20 seem to produce weird effects!|
 |fadealltoblack|none|set all desired rgbl values for all light to 0 and fade towards that (darkness)|
 |fadealltowhite|none|set all desired rgbl values for all light to 255 and fade towards that ("white")|
 |fadealltored|none|set all desired rgbl values for all light to fade towards red|
