@@ -7,6 +7,8 @@ The ESP subscribes to topic "/dmx/push" on our MQTT broker and expects commands 
 
 status: DRAFT
 
+License: GPLv3
+
 ## MQTT-Commands
 
 supported format of commands to be published to the "/dmx/push" topic:
@@ -41,3 +43,10 @@ compile with Arduino ide and upload via curl because we don't use mdns announce:
 ## Websocket-Server
 
 we run a websocket server on port 81 which prints some messages for debugging (because we're lazy and don't want to use the UART all the time).
+
+## Credits
+
+The main libraries/sources of code are:
+  - espDMX written by Matt (@mtongnz), https://github.com/mtongnz/espDMX
+  - esp ArtnetNode by Matt (@mtongnz), https://github.com/mtongnz/ESP8266_ArtNetNode_DMX
+  - ESP8266 core for Arduino, https://github.com/esp8266/Arduino
