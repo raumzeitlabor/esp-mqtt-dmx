@@ -13,6 +13,7 @@ const char* password = "affeaffeaffeaffeaffeaffe00";
 const char* mqtt_server = "infra.rzl.so";
 
 //DMX Config
+#define STATUS_LED_PIN 4
 #define NUM_LIGHTS  2
 unsigned int fadespeed = 20;
 
@@ -67,7 +68,7 @@ void setup() {
   mqttClient.setServer(mqtt_server, 1883);
   mqttClient.setCallback(mqtt_callback);
 
-  dmxB.begin(4);
+  dmxB.begin(STATUS_LED_PIN);
   dmxB.setChans(dmxState, 512);
   randomSeed(analogRead(0)); // nothing connected to 0 so read sees noise
 }
@@ -94,10 +95,13 @@ void mqtt_reconnect() {
     if (mqttClient.connect(WiFi.macAddress().c_str())) {
       Serial.println("connected");
       mqttClient.subscribe("/dmx/push");
+      webSocketServer.broadcastTXT("MQTT-Connection up.");
+
     } else {
       Serial.print("failed, rc=");
       Serial.print(mqttClient.state());
       Serial.println(" try again in 5 seconds");
+      webSocketServer.broadcastTXT("MQTT-Connection failed.");
       delay(5000);
     }
   }
