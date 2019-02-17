@@ -1,4 +1,3 @@
-
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
@@ -22,11 +21,19 @@ const byte parAddr[NUM_LIGHTS] = {9, 19};
 const byte strobeAddr[1] = {1};
 
 // Channels of PAR Lights as offset to starting address
-const byte parLum = 0;
-const byte parR = 1;
-const byte parG = 2;
-const byte parB = 3;
-const byte parFadeSpeed = 7;
+#define numChannels  8
+#define parLum       0      //values    0-255 are luminance
+#define parR         1      //values    0-255 are RED luminance
+#define parG         2      //values    0-255 are GREEN luminance
+#define parB         3      //values    0-255 are BLUE luminance
+#define parPreset    4      //values   15-255 are colorpresets
+#define parSection   5      //values   15-239 section combinations
+                            //values  240-255  everything off
+#define parStrobo    6      //values    0-255 strobe speed, slower to faster (values over 249 are too fast to notice strobing)
+#define parFadeSpeed 7      //values    6-140 speed slow to fast
+                            //values  141-154  7-color-change
+                            //values  155-245 every 6 values, different presets
+                            //values  246-255 OFF
 
 // Channels for Strobe as offset to stating address
 const byte strobeFreq = 0;
@@ -62,7 +69,7 @@ void setup() {
 
   dmxB.begin(4);
   dmxB.setChans(dmxState, 512);
-  randomSeed(analogRead(0));
+  randomSeed(analogRead(0)); // nothing connected to 0 so read sees noise
 }
 
 void setup_wifi() {
@@ -114,12 +121,22 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   Serial.println();
 
   //**********************************************************************************
+  if (strncmp("blackout",(char*)payload, 8) == 0) {
+    for (int i=0; i < NUM_LIGHTS; i++) {
+      memset(&dmxStateTarget[parAddr[i]], 0x00, numChannels);
+      memset(&dmxState[parAddr[i]], 0x00, numChannels);
+    }
+    dmxB.setChans(dmxState, 512);
+  }
+  //**********************************************************************************
   if (strncmp("fadealltoblack",(char*)payload, 14) == 0) {
     for (int i=0; i < NUM_LIGHTS; i++) {
-      dmxStateTarget[parAddr[i]+parLum] = 0;  //luminance
-      dmxStateTarget[parAddr[i]+parR] = 0; // red
-      dmxStateTarget[parAddr[i]+parG] = 0; // green
-      dmxStateTarget[parAddr[i]+parB] = 0; // blue
+      dmxStateTarget[parAddr[i]+parLum] = 0;        //luminance
+      dmxStateTarget[parAddr[i]+parR] = 0;          // red
+      dmxStateTarget[parAddr[i]+parG] = 0;          // green
+      dmxStateTarget[parAddr[i]+parB] = 0;          // blue
+      dmxStateTarget[parAddr[i]+parFadeSpeed] = 0;  // directly set special Channel to 0...
+      dmxState[parAddr[i]+parFadeSpeed] = 0;        // ...in both target and current states
     }
   }
   //**********************************************************************************
@@ -129,6 +146,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
       dmxStateTarget[parAddr[i]+parR] = 255; // red
       dmxStateTarget[parAddr[i]+parG] = 255; // green
       dmxStateTarget[parAddr[i]+parB] = 255; // blue
+      dmxStateTarget[parAddr[i]+parFadeSpeed] = 0;  // directly set special Channel to 0...
+      dmxState[parAddr[i]+parFadeSpeed] = 0;        // ...in both target and current states
     }
   }
   //**********************************************************************************
@@ -138,6 +157,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
       dmxStateTarget[parAddr[i]+parR] = 255; // red
       dmxStateTarget[parAddr[i]+parG] = 0; // green
       dmxStateTarget[parAddr[i]+parB] = 0; // blue
+      dmxStateTarget[parAddr[i]+parFadeSpeed] = 0;  // directly set special Channel to 0...
+      dmxState[parAddr[i]+parFadeSpeed] = 0;        // ...in both target and current states
     }
   }
   //**********************************************************************************
@@ -147,6 +168,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
       dmxStateTarget[parAddr[i]+parR] = 0; // red
       dmxStateTarget[parAddr[i]+parG] = 0; // green
       dmxStateTarget[parAddr[i]+parB] = 255; // blue
+      dmxStateTarget[parAddr[i]+parFadeSpeed] = 0;  // directly set special Channel to 0...
+      dmxState[parAddr[i]+parFadeSpeed] = 0;        // ...in both target and current states
     }
   }
   //**********************************************************************************
@@ -156,30 +179,49 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
       dmxStateTarget[parAddr[i]+parR] = 0; // red
       dmxStateTarget[parAddr[i]+parG] = 255; // green
       dmxStateTarget[parAddr[i]+parB] = 0; // blue
+      dmxStateTarget[parAddr[i]+parFadeSpeed] = 0;  // directly set special Channel to 0...
+      dmxState[parAddr[i]+parFadeSpeed] = 0;        // ...in both target and current states
     }
   }
   //**********************************************************************************
   if (strncmp("cycleallrandom",(char*)payload, 14) == 0) {
+    //message format: "cycleallrandom <brightness>"
+    char *token;
+    int brightness = 255;
+    token = strtok((char*)payload, " ");  //first token is now "cyclerandom"
+    token = strtok(NULL, " ");            //token is now the first value, if provided (brightness)
+    if (token != NULL) {
+      brightness = atoi(token);
+    }
     for (int i=0; i < NUM_LIGHTS; i++) {
-      dmxStateTarget[parAddr[i]+parLum] = random(50,256);  //luminance
-      dmxStateTarget[parAddr[i]+parR] = random(256); // red
-      dmxStateTarget[parAddr[i]+parG] = random(256); // green
-      dmxStateTarget[parAddr[i]+parB] = random(256); // blue
+      dmxStateTarget[parAddr[i]+parLum] = brightness;  //luminance
+      dmxStateTarget[parAddr[i]+parR] = random(1,256); // red
+      dmxStateTarget[parAddr[i]+parG] = random(1,256); // green
+      dmxStateTarget[parAddr[i]+parB] = random(1,256); // blue
+      dmxStateTarget[parAddr[i]+parFadeSpeed] = 0;  // directly set special Channel to 0...
+      dmxState[parAddr[i]+parFadeSpeed] = 0;        // ...in both target and current states
     }
   }
   //**********************************************************************************
   if (strncmp("cyclerandom",(char*)payload, 11) == 0) {
-    //message format: "cyclerandom <Light>"
+    //message format: "cyclerandom <Light> <brightness>"
     char *token;
     int light = 0;
+    int brightness = 255;
     token = strtok((char*)payload, " ");  //first token is now "cyclerandom"
     token = strtok(NULL, " ");            //token is now the first value (Light)
     if (token != NULL) {
       light  = atoi(token);
-      dmxStateTarget[parAddr[light]+parLum] = random(50,256);  //luminance
-      dmxStateTarget[parAddr[light]+parR] = random(256); // red
-      dmxStateTarget[parAddr[light]+parG] = random(256); // green
-      dmxStateTarget[parAddr[light]+parB] = random(256); // blue
+      token = strtok(NULL, " ");          //token is now the second value, if provided (brightness)
+      if (token != NULL) {
+        brightness = atoi(token);
+      }
+      dmxStateTarget[parAddr[light]+parLum] = brightness;  //luminance
+      dmxStateTarget[parAddr[light]+parR] = random(1,256); // red
+      dmxStateTarget[parAddr[light]+parG] = random(1,256); // green
+      dmxStateTarget[parAddr[light]+parB] = random(1,256); // blue
+      dmxStateTarget[parAddr[light]+parFadeSpeed] = 0;  // directly set special Channel to 0...
+      dmxState[parAddr[light]+parFadeSpeed] = 0;        // ...in both target and current states
     }
   }
   //**********************************************************************************
@@ -208,6 +250,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
     if (token != NULL) {
       dmxStateTarget[parAddr[light]+parLum] = (byte)atoi(token);
     }
+    dmxStateTarget[parAddr[light]+parFadeSpeed] = 0;  // directly set special Channel to 0...
+    dmxState[parAddr[light]+parFadeSpeed] = 0;        // ...in both target and current states
   }
   //**********************************************************************************
   if (strncmp("setchannel",(char*)payload, 10) == 0) {
@@ -219,10 +263,23 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
     token = strtok(NULL, " ");            //token is now the first value (channel)
     if (token != NULL) {
       channel = (byte)atoi(token);
+      if (channel < 1) {                  //restrict to positive values
+        channel = 1;
+      }
+      if (channel > 256) {                //restrict to biggest possible DMX address
+        channel = 256;
+      }
+      channel--;                          //our array starts at 0 but DMX addresses start at 1, so we add 1
     }
     token = strtok(NULL, " ");            //token is now the second value (value)
     if (token != NULL) {
       value = (byte)atoi(token);
+      if (value < 0) {                    //restrict to positive values
+        value = 0;
+      }
+      if (value > 255) {                  //restrict to biggest possible value
+        value = 255;
+      }
     }
     dmxState[channel] = value;
     dmxStateTarget[channel] = value;
@@ -237,6 +294,9 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
     token = strtok(NULL, " ");            //token is now the first value (speed)
     if (token != NULL) {
       fadespeed = (unsigned int)atoi(token);
+      if (fadespeed < 20) {                    //restrict to lowest possible speed
+        fadespeed = 20;
+      }
     }
   }
   //**********************************************************************************
@@ -254,8 +314,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
     memset(dmxState, 0x00, sizeof(dmxState));
     memset(dmxStateTarget, 0x00, sizeof(dmxStateTarget));
     for (int i=0; i < NUM_LIGHTS; i++) {
-      dmxState[parAddr[i]+parFadeSpeed] = 100;
-      dmxStateTarget[parAddr[i]+parFadeSpeed] = 100;
+      dmxState[parAddr[i]+parFadeSpeed] = 10;
+      dmxStateTarget[parAddr[i]+parFadeSpeed] = 10;
     }
     dmxB.setChans(dmxState, 512);
   }
