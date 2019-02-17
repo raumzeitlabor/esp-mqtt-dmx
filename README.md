@@ -15,14 +15,15 @@ supported format of commands to be published to the "/dmx/push" topic:
 
 |command|parameters|description|
 |-------|----------|-----------|
+|blackout|none|instantly set all values to 0 thus switching all lamps off|
 |fadespeed|speed in miliseconds|this value is used as a "step width" to move from current DMX state to desired DMX state. Default value = 20, values below 20 seem to produce weird effects!|
 |fadealltoblack|none|set all desired rgbl values for all light to 0 and fade towards that (darkness)|
 |fadealltowhite|none|set all desired rgbl values for all light to 255 and fade towards that ("white")|
 |fadealltored|none|set all desired rgbl values for all light to fade towards red|
 |fadealltogreen|none|set all desired rgbl values for all light to fade towards green|
 |fadealltoblue|none|set all desired rgbl values for all light to fade towards blue|
-|cycleallrandom|none|set a random value for all rgbl values for all lights and fade towards that value|
-|cyclerandom|light|set a specific light to random rgbl values and fade towards them (index starts at 0)|
+|cycleallrandom|brightness|set a random value (and optionally a brightness) for all rgbl values for all lights and fade towards that value|
+|cyclerandom|light brightness|set a specific light to random rgbl values (and optionally a brightness) and fade towards them (index starts at 0)|
 |rgbl|light R G B L|set a specific light to specific values for R G B L (values 0-255)|
 |setchannel|channel value|set a specific DMX channel to one specific value (without fading, hard set)|
 |discopanic|none|set all lights to a random color strobe (using a special DMX channel/value pair)|
