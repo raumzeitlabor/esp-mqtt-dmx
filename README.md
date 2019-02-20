@@ -1,4 +1,4 @@
-# esp-mqtt-dmx
+# esp-mqtt-dmx [![Build Status](https://travis-ci.com/raumzeitlabor/esp-mqtt-dmx.svg?branch=master)](https://travis-ci.com/raumzeitlabor/esp-mqtt-dmx)
 
 This project is providing a MQTT-to-DMX gateway via an ESP8266 in our Hackerspace.
 We used Artnet before but that just spams our network too much so this shall create some MQTT messages which control generic light setups like "fade all to white" or "fade Lamp 1 to red"
