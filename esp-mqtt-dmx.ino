@@ -55,7 +55,7 @@ long now, last = 0;
 void mqtt_reconnect();
 void mqtt_callback(char* topic, byte* payload, unsigned int length);
 void webSocket_event(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
-
+void lamps_off();
 
 void setup() {
   Serial.begin(115200);
@@ -107,6 +107,13 @@ void mqtt_reconnect() {
   }
 }
 
+void lamps_off() {
+  for (int i=0; i < NUM_LIGHTS; i++) {
+    memset(&dmxStateTarget[parAddr[i]], 0x00, numChannels);
+    memset(&dmxState[parAddr[i]], 0x00, numChannels);
+  }
+}
+
 void webSocket_event(uint8_t num, WStype_t type, uint8_t * payload, size_t length){
   if (type == WStype_TEXT){
     for(int i = 0; i < length; i++) Serial.print((char) payload[i]);
@@ -126,10 +133,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 
   //**********************************************************************************
   if (strncmp("blackout",(char*)payload, 8) == 0) {
-    for (int i=0; i < NUM_LIGHTS; i++) {
-      memset(&dmxStateTarget[parAddr[i]], 0x00, numChannels);
-      memset(&dmxState[parAddr[i]], 0x00, numChannels);
-    }
+    lamps_off();
     dmxB.setChans(dmxState, 512);
   }
   //**********************************************************************************
@@ -305,8 +309,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   }
   //**********************************************************************************
   if (strncmp("discopanic",(char*)payload, 10) == 0) {
-    memset(dmxState, 0x00, sizeof(dmxState));
-    memset(dmxStateTarget, 0x00, sizeof(dmxStateTarget));
+    lamps_off();
     for (int i=0; i < NUM_LIGHTS; i++) {
       dmxState[parAddr[i]+parFadeSpeed] = 230;
       dmxStateTarget[parAddr[i]+parFadeSpeed] = 230;
@@ -315,12 +318,32 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   }
   //**********************************************************************************
   if (strncmp("fadeRGB",(char*)payload, 7) == 0) {
-    memset(dmxState, 0x00, sizeof(dmxState));
-    memset(dmxStateTarget, 0x00, sizeof(dmxStateTarget));
+    lamps_off();
     for (int i=0; i < NUM_LIGHTS; i++) {
       dmxState[parAddr[i]+parFadeSpeed] = 10;
       dmxStateTarget[parAddr[i]+parFadeSpeed] = 10;
     }
+    dmxB.setChans(dmxState, 512);
+  }
+  //**********************************************************************************
+  if (strncmp("strobo",(char*)payload, 6) == 0) {
+    //message format: "strobo <speed> <intensity>" note: set intensity AND speed to 0 to switch off
+    byte speed = 255;
+    byte intensity = 255;
+    char *token;
+    token = strtok((char*)payload, " ");  //first token is now "strobo"
+    token = strtok(NULL, " ");            //token is now the first value (speed)
+    if (token != NULL) {
+      speed = (byte)atoi(token);
+      token = strtok(NULL, " ");            //token is now the second value (intensity)
+      if (token != NULL) {
+        intensity = (byte)atoi(token);
+      }
+    }
+    dmxStateTarget[strobeAddr[0]-1] = speed;
+    dmxState[strobeAddr[0]-1] = speed;
+    dmxStateTarget[strobeAddr[0]] = intensity;
+    dmxState[strobeAddr[0]] = intensity;
     dmxB.setChans(dmxState, 512);
   }
 }
