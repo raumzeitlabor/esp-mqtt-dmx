@@ -1,0 +1,17 @@
+
+language: minimal
+
+env:
+    - VER_ARDUINO="1.8.8" VER_ESPBOARD="2.4.2" VER_LIB_PUBSUB="2.7.0" VER_LIB_WEBSOCKETS="2.1.1"
+
+script:
+    - wget http://downloads.arduino.cc/arduino-$VER_ARDUINO-linux64.tar.xz -P /tmp
+    - tar xf /tmp/arduino-$VER_ARDUINO-linux64.tar.xz -C /tmp
+    - mv /tmp/arduino-$VER_ARDUINO $HOME/ide
+    - $HOME/ide/arduino --pref "boardsmanager.additional.urls=http://arduino.esp8266.com/stable/package_esp8266com_index.json" --save-prefs
+    - $HOME/ide/arduino --install-boards esp8266:esp8266:$VER_ESPBOARD
+    - $HOME/ide/arduino --install-library PubSubClient:$VER_LIB_PUBSUB,WebSockets:$VER_LIB_WEBSOCKETS
+    - git clone https://github.com/mtongnz/espDMX.git $HOME/Arduino/libraries/espDMX
+    - $HOME/ide/arduino --board esp8266:esp8266:generic:CpuFrequency=80,ResetMethod=ck,CrystalFreq=40,FlashFreq=40,FlashMode=qio,FlashSize=4M3M,LwIPVariant=v2mss536,Debug=Disabled,DebugLevel=None____,UploadSpeed=115200 --save-prefs
+    - $HOME/ide/arduino --verify $TRAVIS_BUILD_DIR/esp-mqtt-dmx.ino
+      
