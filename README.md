@@ -28,6 +28,7 @@ supported format of commands to be published to the "/dmx/push" topic:
 |setchannel|channel value|set a specific DMX channel to one specific value (without fading, hard set)|
 |discopanic|none|set all lights to a random color strobe (using a special DMX channel/value pair)|
 |fadeRGB|none|set all lights to go through a slow cycle of colors (using a special DMX channel/value pair)|
+|strobo|speed intensity|activate the strobo (speed and intesity optional 0-255, both 255 if no options provided)|
 
 ## Compiler config
 
